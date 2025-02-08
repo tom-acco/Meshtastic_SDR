@@ -374,28 +374,31 @@ def validate_aes_key(key = None):
     if debug:
         print(f"[DEBUG] Validating key: {key}")
 
-    key_len = len(base64.b64decode(key).hex())
-
-    if key_len == 2:
-        key = f"1PG7OiApB1nwvP+rz05p{key}"
+    try:
         key_len = len(base64.b64decode(key).hex())
 
+        if key_len == 2:
+            key = f"1PG7OiApB1nwvP+rz05p{key}"
+            key_len = len(base64.b64decode(key).hex())
+
+            if debug:
+                print(f"[DEBUG] Added Meshtastic static key to 2 bit key: {key}")
+
         if debug:
-            print(f"[DEBUG] Added Meshtastic static key to 2 bit key: {key}")
+            print(f"[DEBUG] key_len: {key_len}")
 
-    if debug:
-        print(f"[DEBUG] key_len: {key_len}")
+        if (key_len == 32 or key_len == 64):
+            pass
+        else:
+            return False
 
-    if (key_len == 32 or key_len == 64):
-        pass
-    else:
+        if debug:
+            print(f"[DEBUG] Key valid")
+            print("-"*50)
+
+        return key
+    except Exception as e:
         return False
-
-    if debug:
-        print(f"[DEBUG] Key valid")
-        print("-"*50)
-
-    return key
 
 def handle_packet(pkt = None):
     packet = Packet(pkt)
@@ -454,19 +457,27 @@ if __name__ == "__main__":
 
     try:
         with open("keys", "r") as file:
-            keys = [line.strip() for line in file]
+            temp_keys = [line.strip() for line in file]
     except Exception as e:
-        keys = ["1PG7OiApB1nwvP+rz05pAQ=="]
+        temp_keys = ["1PG7OiApB1nwvP+rz05pAQ=="]
 
-    for k, key in enumerate(keys):
+    keys = []
+
+    for key in temp_keys:
+        if not key or key.startswith("#"):
+            continue
+
         valid_key = validate_aes_key(key)
 
         if not valid_key:
-            raise Exception(f"Key '{key}' is not a valid AES 128/256 key!")
+            print(f"[WARN] Key '{key}' is not a valid AES 128/256 key!")
         else:
-            keys[k] = valid_key
+            keys.append(valid_key)
 
-    print(f"[INFO] Loaded {len(keys)} keys")
+    if len(keys) > 0:
+        print(f"[INFO] Loaded {len(keys)} keys")
+    else:
+        print(f"[WARN] No keys loaded.")
 
     listen_on_network(args.ip, args.port, keys)
 
