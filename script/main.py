@@ -2,6 +2,7 @@ import argparse
 import base64
 import json
 import zmq
+import time
 
 from datetime import datetime
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -111,6 +112,9 @@ class Packet(object):
 
             return True
         except Exception as e:
+            if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf"):
+                print(e)
+
             raise Exception(e)
 
 class PacketData(object):
@@ -227,7 +231,7 @@ class Message(object):
 
             case 1: # TEXT_MESSAGE_APP
                 self.type = "TEXT_MESSAGE_APP"
-                self.text = data.payload.decode("utf-8")
+                self.data = data.payload.decode("utf-8")
 
             case 2 : # REMOTE_HARDWARE_APP
                 self.type = "REMOTE_HARDWARE_APP"
@@ -238,30 +242,34 @@ class Message(object):
                 pos = mesh_pb2.Position()
                 pos.ParseFromString(data.payload)
 
-                self.latitude = pos.latitude_i * 1e-7
-                self.longitude = pos.longitude_i * 1e-7
+                self.data = {
+                    "latitude": pos.latitude_i * 1e-7,
+                    "longitude": pos.longitude_i * 1e-7
+                }
 
             case 4 : # NODEINFO_APP
                 self.type = "NODEINFO_APP"
 
-                info = mesh_pb2.User()
-
                 try:
-                    self.info = str(info.ParseFromString(data.payload))
+                    info = mesh_pb2.User()
+                    info.ParseFromString(data.payload)
+                    self.data = str(info)
                 except:
-                    self.info = None
+                    self.data = None
 
             case 5 : # ROUTING_APP
                 self.type = "ROUTING_APP"
 
                 routing = mesh_pb2.Routing()
-                self.routing = str(routing.ParseFromString(data.payload))
+                routing.ParseFromString(data.payload)
+                self.data = str(routing)
 
             case 6 : # ADMIN_APP
                 self.type = "ADMIN_APP"
 
                 admin = admin_pb2.AdminMessage()
-                self.admin = str(admin.ParseFromString(data.payload))
+                admin.ParseFromString(data.payload)
+                self.data = str(admin)
 
             case 7 : # TEXT_MESSAGE_COMPRESSED_APP
                 self.type = "TEXT_MESSAGE_COMPRESSED_APP"
@@ -285,19 +293,22 @@ class Message(object):
                 self.type = "STORE_FORWARD_APP"
 
                 sfwd = mesh_pb2.StoreAndForward()
-                self.sfwd = str(sfwd.ParseFromString(data.payload))
+                sfwd.ParseFromString(data.payload)
+                self.data = str(sfwd)
 
             case 67 : # TELEMETRY_APP
                 self.type = "TELEMETRY_APP"
 
                 telemetry = telemetry_pb2.Telemetry()
-                self.telemetry = str(telemetry.ParseFromString(data.payload))
+                telemetry.ParseFromString(data.payload)
+                self.data = str(telemetry)
 
             case 68 : # ZPS_APP
                 self.type = "ZPS_APP"
 
                 z_info = mesh_pb2.zps()
-                self.z_info = str(z_info.ParseFromString(data.payload))
+                z_info.ParseFromString(data.payload)
+                self.data = str(z_info)
 
             case 69 : # SIMULATOR_APP
                 self.type = "SIMULATOR_APP"
@@ -306,13 +317,15 @@ class Message(object):
                 self.type = "TRACEROUTE_APP"
 
                 trct = mesh_pb2.RouteDiscovery()
-                self.trct = str(trct.ParseFromString(data.payload))
+                trct.ParseFromString(data.payload)
+                self.data = str(trct)
 
             case 71 : # NEIGHBORINFO_APP
                 self.type = "NEIGHBORINFO_APP"
 
                 ninfo = mesh_pb2.NeighborInfo()
-                self.ninfo = str(ninfo.ParseFromString(data.payload))
+                ninfo.ParseFromString(data.payload)
+                self.data = str(ninfo)
 
             case 72 : # ATAK_PLUGIN
                 self.type = "ATAK_PLUGIN"
@@ -321,7 +334,8 @@ class Message(object):
                 self.type = "MAP_REPORT_APP"
 
                 mrpt = mesh_pb2.MapReport()
-                self.mrpt = str(mrpt.ParseFromString(data.payload))
+                mrpt.ParseFromString(data.payload)
+                self.data = str(mrpt)
 
             case 74 : # POWERSTRESS_APP
                 self.type = "POWERSTRESS_APP"
@@ -430,8 +444,9 @@ def listen_on_network(ip = None, port = None, keys = []):
     while True:
         if socket.poll(10) != 0:
             pkt = socket.recv()
-
             handle_packet(pkt)
+        else:
+            time.sleep(0.1)
 
 if __name__ == "__main__":
     if args.debug:
