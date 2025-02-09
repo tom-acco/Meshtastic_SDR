@@ -1,5 +1,7 @@
 import json
 
+from meshtastic import mesh_pb2, admin_pb2, telemetry_pb2
+
 class Message(object):
     def __init__(self, sourceId, destId, data):
         self.sourceId = sourceId

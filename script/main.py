@@ -79,7 +79,6 @@ def handle_packet(pkt = None):
     if decrypted:
         print(f"[INFO] Success!")
         message = packet.get_message()
-
         print(message.to_json())
     else:
         print("[INFO] Failed :(")
