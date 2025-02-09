@@ -32,13 +32,9 @@ class Message(object):
 
                 case 4 : # NODEINFO_APP
                     self.type = "NODEINFO_APP"
-
-                    try:
-                        info = mesh_pb2.User()
-                        info.ParseFromString(data.payload)
-                        self.data = str(info)
-                    except:
-                        self.data = None
+                    info = mesh_pb2.User()
+                    info.ParseFromString(data.payload)
+                    self.data = str(info)
 
                 case 5 : # ROUTING_APP
                     self.type = "ROUTING_APP"
