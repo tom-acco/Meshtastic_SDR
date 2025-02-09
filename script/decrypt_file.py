@@ -21,6 +21,16 @@ def decrypt(file = None, key = None):
 
     packet = Packet(raw_data)
 
+    if debug:
+        print("-" * 50)
+        print(f"[DEBUG] Src: {packet.get_source()}")
+        print(f"[DEBUG] Dest: {packet.get_dest()}")
+        print(f"[DEBUG] PacketId: {packet.get_packet_id()}")
+        print(f"[DEBUG] Flags: {packet.get_flags()}")
+        print(f"[DEBUG] ChannelHash: {packet.get_channel_hash()}")
+        print(f"[DEBUG] Data: {packet.get_data()}")
+        print("-" * 50)
+
     try:
         packet.decrypt(key)
         message = packet.get_message()
