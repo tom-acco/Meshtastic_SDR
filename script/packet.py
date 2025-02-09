@@ -92,20 +92,13 @@ class Packet(object):
             f.write(self.raw)
 
     def decrypt(self, key):
+        ## Try with PSK method
         try:
-            if self.get_dest() == "ffffffff":
-                ## Decrypt channel
-                aes_nonce = self.packet_id + b'\x00\x00\x00\x00' + self.src + b'\x00\x00\x00\x00'
-                cipher = Cipher(algorithms.AES(b64_to_hex(key)), modes.CTR(aes_nonce), backend=default_backend())
-                decryptor = cipher.decryptor()
-                protobuf = decryptor.update(self.data) + decryptor.finalize()
-            else:
-                ## Decrypt direct message
-                aes_nonce = self.packet_id + self.data[-4:] + self.src + b'\x00\x00\x00\x00'
-                cipher = Cipher(algorithms.AES(b64_to_hex(key)), modes.CTR(aes_nonce), backend=default_backend())
-                decryptor = cipher.decryptor()
-                protobuf = decryptor.update(self.data[:-4]) + decryptor.finalize()
-            
+            aes_nonce = self.packet_id + b'\x00\x00\x00\x00' + self.src + b'\x00\x00\x00\x00'
+            cipher = Cipher(algorithms.AES(b64_to_hex(key)), modes.CTR(aes_nonce), backend=default_backend())
+            decryptor = cipher.decryptor()
+            protobuf = decryptor.update(self.data) + decryptor.finalize()
+
             ## Try decode
             data = mesh_pb2.Data()
             data.ParseFromString(protobuf)
@@ -116,4 +109,28 @@ class Packet(object):
             if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf"):
                 print(e)
 
-            raise Exception(e)
+        ## Try with PKI method
+        try:
+            ## TODO: Random nonce changes between source and dest, why? Eg. src: ffb7fd08, dest: ffb7cd08.
+            ## NOTE: random is uint32le
+            random = self.data[-4:]
+            aes_nonce = self.packet_id + random + self.src + b'\x00\x00\x00\x00'
+
+            ## TODO: need to derive shared secret from sender public key and recipient private key
+            shared_secret = b64_to_hex(key)
+
+            cipher = Cipher(algorithms.AES(shared_secret), modes.CTR(aes_nonce), backend=default_backend())
+            decryptor = cipher.decryptor()
+            protobuf = decryptor.update(self.data[:-4]) + decryptor.finalize()
+
+            ## Try decode
+            data = mesh_pb2.Data()
+            data.ParseFromString(protobuf)
+            self.message = Message(self.get_source(), self.get_dest(), data)
+
+            return True
+        except Exception as e:
+            if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf"):
+                print(e)
+        
+        raise Exception("Unable to decrypt!")
