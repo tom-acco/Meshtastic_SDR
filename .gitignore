@@ -1,2 +1,4 @@
 keys
 .venv
+*.txt
+__pycache__

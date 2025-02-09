@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description = "Process incoming command parmete
 parser.add_argument("ip", action = "store", help = "IP Address.")
 parser.add_argument("port", action = "store", help = "Port")
 parser.add_argument("-d", "--debug", action = "store_true", dest = "debug", help = "Print more debug messages")
+parser.add_argument("-s", "--save", action = "store_true", dest = "save", help = "Save packets to disk")
 args = parser.parse_args()
 
 debug = False
@@ -51,6 +52,9 @@ def validate_aes_key(key = None):
 def handle_packet(pkt = None):
     packet = Packet(pkt)
 
+    if save:
+        packet.save()
+
     print(f"[INFO] Received packet! @ {packet.get_timestamp()}")
     
     if debug:
@@ -65,7 +69,6 @@ def handle_packet(pkt = None):
     
     decrypted = False
 
-    print(f"[INFO] Attempting to decrypt...")
     for key in keys:
         try:
             decrypted = packet.decrypt(key)
@@ -102,6 +105,9 @@ def listen_on_network(ip = None, port = None, keys = []):
 if __name__ == "__main__":
     if args.debug:
         debug = True
+
+    if args.save:
+        save = True
 
     try:
         with open("keys", "r") as file:
