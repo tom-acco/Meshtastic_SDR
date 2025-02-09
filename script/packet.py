@@ -106,11 +106,12 @@ class Packet(object):
 
             return True
         except Exception as e:
-            if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf"):
+            if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf.Data'"):
                 print(e)
 
-        ## Try with PKI method
+        ## Try with PKC method
         try:
+            ## https://meshtastic.org/docs/development/reference/encryption-technical/
             ## TODO: Random nonce changes between source and dest, why? Eg. src: ffb7fd08, dest: ffb7cd08.
             ## NOTE: random is uint32le
             random = self.data[-4:]
@@ -130,7 +131,7 @@ class Packet(object):
 
             return True
         except Exception as e:
-            if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf"):
+            if not str(e).startswith("Error parsing message with type 'meshtastic.protobuf.Data'"):
                 print(e)
         
         raise Exception("Unable to decrypt!")
