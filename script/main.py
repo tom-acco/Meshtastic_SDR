@@ -52,23 +52,24 @@ def validate_aes_key(key = None):
 def handle_packet(pkt = None):
     packet = Packet(pkt)
 
-    if save:
-        packet.save()
+    print("-" * 20, " PACKET ", "-" * 20)
+    print(f"[INFO] Received @ {packet.get_timestamp()}")
 
-    print(f"[INFO] Received packet! @ {packet.get_timestamp()}")
+    if save:
+        print(f"[INFO] Saving...")
+        packet.save()
     
     if debug:
-        print("-" * 50)
         print(f"[DEBUG] Src: {packet.get_source()}")
         print(f"[DEBUG] Dest: {packet.get_dest()}")
         print(f"[DEBUG] PacketId: {packet.get_packet_id()}")
         print(f"[DEBUG] Flags: {packet.get_flags()}")
         print(f"[DEBUG] ChannelHash: {packet.get_channel_hash()}")
         print(f"[DEBUG] Data: {packet.get_data()}")
-        print("-" * 50)
     
     decrypted = False
 
+    print(f"[INFO] Attempting to decrypt...")
     for key in keys:
         try:
             decrypted = packet.decrypt(key)
@@ -77,7 +78,6 @@ def handle_packet(pkt = None):
             continue
     
     if decrypted:
-        print(f"[INFO] Success!")
         message = packet.get_message()
         print(message.to_json())
     else:
